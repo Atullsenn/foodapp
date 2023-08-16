@@ -38,16 +38,19 @@ var upload = multer({
     // fileFilter:fileFilter
 }).fields([{ name: 'trade_license' }, { name: 'profile' }, { name: 'address_document'}, { name: 'area_video'}, { name: 'area_image'}, { name: 'dish_picture'}]);
 
-host_route.post('/host/register', upload, hostRegValidation, hostController.HostRegister);
+host_route.post('/host/register', hostRegValidation, hostController.HostRegister);
 host_route.post('/addhosting', authMiddleWare, upload, hostController.addHosting);
-host_route.get('/hostingdetails', authMiddleWare, hostController.HostingDetails);
+host_route.get('/hostingdetails', authMiddleWare, hostController.GetHostings);
 
 host_route.post('/upbookings', authMiddleWare, hostController.UpBookings);
 host_route.post('/prebookings', authMiddleWare, hostController.PreBookings);
 host_route.post('/accept', hostController.AcceptBooking);
 host_route.post('/reject', hostController.RejectBooking);
 
+host_route.post('/rating', authMiddleWare, hostController.Ratings);
+host_route.get('/rating', authMiddleWare, hostController.getRating);
+host_route.post('/myratings', authMiddleWare, hostController.MyRatings);
+
+host_route.post('/change/menu', upload, authMiddleWare, hostController.changeMenu);
+
 module.exports = host_route;
-
-
-// make api for find upcoming and previous booking list in node js

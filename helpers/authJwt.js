@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const con = require('../config/database');
-const {ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET}=process.env;
+const { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } = process.env;
 
 // console.log(ACCESS_TOKEN_SECRET)
 const authServices = {
@@ -50,7 +50,6 @@ const authServices = {
       console.log(err);
     }
   },
-
   verifyRefreshToken: async (refreshToken) => {
     return new Promise((resolve, reject) => {
       let findTokenQuery = "SELECT * FROM userToken WHERE token = ?";
@@ -81,19 +80,20 @@ const authServices = {
           message: "There is no token in header",
         });
 
-      const user=jwt.verify(token, ACCESS_TOKEN_SECRET);
+      const user = jwt.verify(token, ACCESS_TOKEN_SECRET);
       req.user = user;
     }
     catch (error) {
       return res.status(401).send({
         success: false,
-        msg: "Token is Expired Login Again."
+        message: "Token is Expired Login Again."
       });
     }
     // console.log(user)
     next();
   },
 };
+
 module.exports = authServices;
 
 

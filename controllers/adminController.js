@@ -1,9 +1,9 @@
 const con = require('../config/database');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
-const jwt = require("jsonwebtoken");
 const sendMail = require('../helpers/sendMail')
 const rendomString = require('randomstring');
+
 
 async function hashPassword(password) {
     return await bcrypt.hash(password, 10);
@@ -19,7 +19,7 @@ const Login = async (req, res) => {
             })
         }
         else {
-            let findUserQuery = "SELECT id, first_name, last_name, profile, email, password FROM tbl_admin WHERE email = ?";
+            let findUserQuery = "SELECT * FROM tbl_admin WHERE email = ?";
             await con.query(findUserQuery, [email], (err, data) => {
                 if (err) {
                     res.json(err);
@@ -61,6 +61,7 @@ const forgotPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
+            success:false,
             errors: errors.array()
         });
     }
@@ -101,11 +102,11 @@ const forgotPassword = async (req, res) => {
                                         </tr>
                                         <tr>
                                             <td style="padding:0 35px;">
-                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:32px;font-family:'Rubik',sans-serif;">You have
+                                                <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:29px;font-family:'Rubik',sans-serif;">You have
                                                     requested to reset your password</h1>
                                                 
                                                 <span
-                                                    style="display:inline-block; vertical-align:middle; margin:29px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
+                                                    style="display:inline-block; vertical-align:middle; margin:19px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
                                                     <h3 style="text-align: left;">Hi, ${data[0].first_name}</h3>
                                                     <p style="color:#455056; font-size:15px;line-height:24px; margin:0;">
                                                     We cannot simply send you your old password. A unique link to reset your
@@ -179,6 +180,7 @@ const ResetPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
+            success:false,
             errors: errors.array()
         });
     }
@@ -226,7 +228,6 @@ const ResetPassword = async (req, res) => {
                                     })
                                 }
                             });
-
                         }
                     }
                 })
@@ -245,6 +246,7 @@ const AdminChangePassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
+            success:false,
             errors: errors.array()
         });
     }
@@ -347,6 +349,7 @@ const UpdateProfile = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
+            success:false,
             errors: errors.array()
         });
     }
@@ -400,7 +403,7 @@ const UpdateProfile = async (req, res) => {
 
 const VisitorList = async (req, res) => {
     try {
-        var sql = `Select * from tbl_visitors as a where not exists ( select * from tbl_hosts as b where a.id=b.visitor_id) AND NOT is_deleted=${1};`;
+        var sql = `Select * from tbl_visitors as a where not exists ( select * from tbl_hosts as b where a.id=b.visitor_id) AND NOT is_deleted=${1} Order by created_at DESC`;
         await con.query(sql, (err, data) => {
             if (err) throw err;
             if (data.length < 1) {
@@ -474,7 +477,7 @@ const ChangeStatus = async (req, res) => {
             if (data.length > 0) {
                 let status;
                 if (data[0].status == 1) {
-                    status = 2;
+                    status = 0;
                 }
                 else {
                     status = 1;
@@ -514,7 +517,7 @@ const ChangeStatus = async (req, res) => {
 
 const HostList = async (req, res) => {
     try {
-        var sql = `Select tbl_visitors.*, tbl_hosts.* from tbl_visitors INNER JOIN tbl_hosts ON tbl_hosts.visitor_id= tbl_visitors.id where exists ( select * from tbl_hosts as b where tbl_visitors.id=b.visitor_id) AND NOT is_deleted=${1};`;
+        var sql = `Select tbl_visitors.*, tbl_hosts.* from tbl_visitors INNER JOIN tbl_hosts ON tbl_hosts.visitor_id= tbl_visitors.id where exists ( select * from tbl_hosts as b where tbl_visitors.id=b.visitor_id) AND NOT is_deleted=${1} Order by tbl_hosts.created_at DESC`;
         await con.query(sql, (err, data) => {
             if (err) throw err;
             if (data.length < 1) {
@@ -534,12 +537,476 @@ const HostList = async (req, res) => {
     catch (error) {
         res.status(500).send({
             success: false,
+            msg: error.messages
+        })
+    }
+}
+
+const bookingList = async (req, res) => {
+    let sqlQuery = `select tbl_booking.*, tbl_payment.payment_method as payment_method, tbl_payment.amount as price, CONCAT(a.first_name, ' ', a.last_name) as host_name, CONCAT(b.first_name, ' ', b.last_name) as visitor_name, 
+    tbl_hosting.area_video, tbl_hosting.place_type,
+    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state, ', ',tbl_hosting.country) as Host_address 
+    from tbl_booking 
+    INNER JOIN tbl_visitors  as a on tbl_booking.host_id=a.id 
+    INNER JOIN tbl_visitors  as b on tbl_booking.visitor_id=b.id 
+    INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id 
+    INNER JOIN tbl_payment on tbl_booking.id=tbl_payment.booking_id
+    where tbl_booking.is_deleted=? ORDER BY booking_date DESC`;
+    try {
+        await con.query(sqlQuery, [0], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                res.status(200).send({
+                    success: true,
+                    data: data
+                })
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    msg: "Booking list not available !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
             msg: error.message
         })
     }
 }
 
+const CancelBooking = async (req, res) => {
+    const { booking_id } = req.body;
+    try {
+        if (!booking_id) {
+            res.status(400).send({
+                success: false,
+                msg: "Provide booking id !"
+            })
+        }
+        else {
+            let sqlQuery = "select * from tbl_booking where id=?"
+            await con.query(sqlQuery, [booking_id], (err, data) => {
+                if (err) throw err;
+                if (data.length > 0) {
+                    if (data[0].status == 3) {
+                        res.status(400).send({
+                            success: false,
+                            msg: "Booking is alrady cancelled !"
+                        })
+                    }
+                    else {
+                        let updateQuery = "update tbl_booking set status= ? where id=?";
+                        con.query(updateQuery, [3, booking_id], (err, result) => {
+                            if (err) throw err;
+                            let guests = data[0].adult + data[0].child;
+                            let sqlQuery = "select no_of_guests as guests from tbl_hosting where id=?"
+                            con.query(sqlQuery, [data[0].hosting_id], (err, seat) => {
+                                if (err) throw err;
+                                if (seat.length > 0) {
+                                    let total_guests = seat[0].guests;
+                                    let add_seat = total_guests + guests;
+                                    let updateQuery = "update tbl_hosting set no_of_guests=? where id=?";
+                                    con.query(updateQuery, [add_seat, data[0].hosting_id], (err, update) => {
+                                        if (err) throw err;
+                                    })
+                                }
+                            })
+                            res.status(200).send({
+                                success: true,
+                                msg: "Booking cancelled successfully !"
+                            })
+                        })
+                    }
+                }
+                else {
+                    res.status(400).send({
+                        success: false,
+                        msg: "Booking not found !"
+                    })
+                }
+            })
+        }
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const ApproveBooking = async (req, res) => {
+    const { booking_id } = req.body;
+    try {
+        if (!booking_id) {
+            res.status(400).send({
+                success: false,
+                msg: "Provide Booking id !"
+            })
+        }
+        else {
+            let sqlQuery = "select * from tbl_booking where id=?";
+            await con.query(sqlQuery, [booking_id], (err, data) => {
+                if (err) throw err;
+                if (data.length > 0) {
+                    if (data[0].status == 1) {
+                        res.status(400).send({
+                            success: false,
+                            msg: "Booking is already accepted !"
+                        })
+                    }
+                    else {
+                        let updateQuery = "update tbl_booking set status=? where id =?";
+                        con.query(updateQuery, [1, booking_id], (err, result) => {
+                            if (err) throw err;
+                            res.status(200).send({
+                                success: true,
+                                msg: "Approved booking successfully !"
+                            })
+                        })
+                    }
+                }
+                else {
+                    res.status(400).send({
+                        success: false,
+                        msg: "Booking not found !"
+                    })
+                }
+            })
+        }
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const deleteBooking = async (req, res) => {
+    const { booking_id } = req.body;
+    try {
+        if (!booking_id) {
+            res.status(400).send({
+                success: false,
+                msg: "Provide booking id !"
+            })
+        }
+        else {
+            let sqlQuery = "select * from tbl_booking where id=?";
+            await con.query(sqlQuery, [booking_id], (err, data) => {
+                if (err) throw err;
+                if (data.length > 0) {
+                    if (data[0].is_deleted == 0) {
+                        let updateQuery = "update tbl_booking set is_deleted =? where id=?";
+                        con.query(updateQuery, [1, booking_id], (err, result) => {
+                            if (err) throw err;
+                            res.status(200).send({
+                                success: false,
+                                msg: "Booking deleted successfully !"
+                            })
+                        })
+                    }
+                    else {
+                        res.status(400).send({
+                            success: false,
+                            msg: "Booking is alreday deleted !"
+                        })
+                    }
+                }
+                else {
+                    res.status(400).send({
+                        success: false,
+                        msg: "Booking not found !"
+                    })
+                }
+            })
+        }
+    }
+    catch (error) {
+        req.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const Ratings = async (req, res) => {
+    const { id } = req.body;
+    try {
+        if (!id) {
+            res.status(400).send({
+                success: false,
+                msg: "Provide user id !"
+            })
+        }
+        else {
+            let sql = "select * from tbl_hosts where visitor_id =?";
+            await con.query(sql, [id], (err, data) => {
+                if (err) throw err;
+                if (data.length > 0) {
+                    //host
+                    let sqlQuery = "select AVG(rating) AS overall_rating, COUNT(review) AS total_reviews from tbl_rating where host_id=? and rating_by=? and is_deleted=?";
+                    con.query(sqlQuery, [id, 2, 0], (err, data) => {
+                        if (err) throw err;
+                        if (data[0].overall_rating != null) {
+                            let selectQuery = "select tbl_rating.rating, tbl_rating.review, CONCAT(tbl_visitors.first_name, ' ' , tbl_visitors.last_name) as Name, tbl_rating.created_at from tbl_rating INNER JOIN tbl_visitors on tbl_visitors.id=tbl_rating.visitor_id where host_id=? and rating_by=? and tbl_rating.is_deleted=?";
+                            con.query(selectQuery, [id, 2, 0], (err, details) => {
+                                if (err) throw err;
+                                if (details.length > 0) {
+                                    original = data[0].overall_rating;
+                                    //let overall_rating = Math.round(original * 10) / 10;
+                                    let overall_rating = original.toFixed(1);
+                                    let result = {
+                                        overall_rating: overall_rating,
+                                        total_reviews: data[0].total_reviews,
+                                        data: details
+                                    }
+                                    res.status(200).send({
+                                        success: true,
+                                        response: result
+                                    })
+                                }
+                                else {
+                                    res.status(400).send({
+                                        success: false,
+                                        msg: "Rating not found !"
+                                    })
+                                }
+                            })
+                        }
+                        else {
+                            res.status(400).send({
+                                success: false,
+                                msg: "rating is not available !"
+                            })
+                        }
+                    })
+                }
+                else {
+                    //visitor
+                    let sqlQuery = "select AVG(rating) AS overall_rating, COUNT(review) AS total_reviews from tbl_rating where visitor_id=? and rating_by=?";
+                    con.query(sqlQuery, [id, 1], (err, data) => {
+                        if (err) throw err;
+                        if (data[0].overall_rating != null) {
+                            let selectQuery = "select tbl_rating.rating, tbl_rating.review, CONCAT(tbl_visitors.first_name, ' ', tbl_visitors.last_name) as Name, tbl_rating.created_at from tbl_rating INNER JOIN tbl_visitors on tbl_visitors.id=tbl_rating.host_id where visitor_id=? and rating_by=? and tbl_rating.is_deleted=?"
+                            con.query(selectQuery, [id, 1, 0], (err, details) => {
+                                if (err) throw err;
+                                if (details.length > 0) {
+                                    original = data[0].overall_rating;
+                                    // let overall_rating = Math.round(original * 10) / 10;
+                                    let overall_rating = original.toFixed(1);
+                                    let result = {
+                                        overall_rating: overall_rating,
+                                        total_reviews: data[0].total_reviews,
+                                        data: details
+                                    }
+
+                                    res.status(200).send({
+                                        success: true,
+                                        response: result
+                                    })
+                                }
+                                else {
+                                    res.status(400).send({
+                                        success: false,
+                                        msg: "Rating not found !"
+                                    })
+                                }
+                            })
+                        }
+                        else {
+                            res.status(400).send({
+                                success: false,
+                                msg: "Rating is not available !"
+                            })
+                        }
+                    })
+                }
+            })
+        }
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const GetVisitorReview = async (req, res) => {
+    try {
+        let selectQuery = "select tbl_rating.*, CONCAT(b.first_name,' ' ,b.last_name) as visitor_name, CONCAT(a.first_name,' ' ,a.last_name) as host_name from tbl_rating INNER JOIN tbl_visitors as a on a.id=tbl_rating.host_id  INNER JOIN tbl_visitors as b on b.id=tbl_rating.visitor_id where rating_by=? and tbl_rating.is_deleted=?";
+        await con.query(selectQuery, [1, 0], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+
+                res.status(200).send({
+                    success: true,
+                    data: data
+                })
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    msg: "Data not found !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const GetHostReview = async (req, res) => {
+    try {
+        let selectQuery = "select tbl_rating.*, CONCAT(b.first_name,' ' ,b.last_name) as visitor_name, CONCAT(a.first_name,' ' ,a.last_name) as host_name from tbl_rating INNER JOIN tbl_visitors as a on a.id=tbl_rating.host_id  INNER JOIN tbl_visitors as b on b.id=tbl_rating.visitor_id where rating_by=? and tbl_rating.is_deleted=?";
+        await con.query(selectQuery, [2, 0], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                res.status(200).send({
+                    success: true,
+                    data: data
+                })
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    msg: "Data not found !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const DeleteRating = async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            res.status(400).send({
+                success: false,
+                msg: "Provide rating id !"
+            })
+        }
+        else {
+            var sql = "select is_deleted from tbl_rating where id=?";
+            await con.query(sql, [id], (err, data) => {
+                if (err) throw err;
+                if (data.length > 0) {
+                    if (data[0].is_deleted == 1) {
+                        res.status(400).send({
+                            success: false,
+                            msg: "Rating is already deleted !"
+                        })
+                    }
+                    else {
+                        var sql = "update tbl_rating set is_deleted=? where id=?";
+                        con.query(sql, [1, id], (err, data) => {
+                            if (err) throw err;
+                            res.status(200).send({
+                                success: true,
+                                msg: "Rating deleted successfully!"
+                            })
+                        })
+                    }
+                }
+                else {
+                    res.status(400).send({
+                        success: false,
+                        msg: "Rating not found !"
+                    })
+                }
+            })
+        }
+
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const paymentDetails = async (req, res) => {
+    let sqlQuery = `select tbl_payment.*, CONCAT(tbl_visitors.first_name," " ,tbl_visitors.last_name) as customer from tbl_payment 
+    INNER JOIN tbl_visitors on tbl_visitors.id=tbl_payment.visitor_id`;
+    try {
+        await con.query(sqlQuery, [0], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                res.status(200).send({
+                    success: true,
+                    data: data
+                })
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    mag: "Booking list not available !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+const CustomerBookings = async (req, res) => {
+    const { visitorId } = req.body;
+    let sqlQuery = `select tbl_booking.*, tbl_payment.payment_method as payment_method, tbl_payment.amount as price, CONCAT(a.first_name, ' ', a.last_name) as host_name, 
+    tbl_hosting.area_video, tbl_hosting.place_type,
+    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state, ', ',tbl_hosting.country) as Host_address 
+    from tbl_booking 
+    INNER JOIN tbl_visitors  as a on tbl_booking.host_id=a.id 
+    INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id 
+    INNER JOIN tbl_payment on tbl_booking.id=tbl_payment.booking_id
+    where tbl_booking.is_deleted=? and tbl_booking.visitor_id='${visitorId}' ORDER BY booking_date DESC`;
+    try {
+        await con.query(sqlQuery, [0], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                res.status(200).send({
+                    success: true,
+                    data: data
+                })
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    msg: "Booking list not available !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            msg: error.message
+        })
+    }
+}
+
+
 module.exports = {
     Login, forgotPassword, ResetPassword, AdminChangePassword, VisitorList, GetProfile,
-    UpdateProfile, DeleteVisitor, ChangeStatus, HostList
+    UpdateProfile, DeleteVisitor, ChangeStatus, HostList, bookingList, CancelBooking, ApproveBooking,
+    Ratings, deleteBooking, GetVisitorReview, GetHostReview, DeleteRating, paymentDetails, CustomerBookings
 }

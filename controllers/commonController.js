@@ -1121,11 +1121,390 @@ const GetBookRequire = async (req, res) => {
     }
 }
 
+const countAll = async (req, res) => {
+    try {
+        let sqlQuery = `SELECT COUNT(*) as no_of_visitors from tbl_visitors WHERE NOT EXISTS
+        (SELECT * FROM  tbl_hosts WHERE tbl_hosts.visitor_id = tbl_visitors.id)`
+        await con.query(sqlQuery, (err, visitors) => {
+            if (err) throw err;
+            let query = `SELECT COUNT(*) as no_of_hosts from tbl_hosts`;
+            con.query(query, (err, hosts) => {
+                if (err) throw err;
+                let query1 = `SELECT COUNT(*) as no_of_bookings from tbl_booking`;
+                con.query(query1, (err, bookings) => {
+                    if (err) throw err;
+                    let query2 = `SELECT COUNT(*) as cancel_orders from tbl_booking where status='${3}'`;
+                    con.query(query2, (err, cancel) => {
+                        if (err) throw err;
+                        let details = {
+                            no_of_visitors: visitors[0].no_of_visitors,
+                            no_of_hosts: hosts[0].no_of_hosts,
+                            no_of_bookings: bookings[0].no_of_bookings,
+                            cancel_orders: cancel[0].cancel_orders
+                        }
+                        res.status(200).send({
+                            success: true,
+                            details
+                        })
+                    })
+                })
+            })
+
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+const friendRequest = async (req, res) => {
+    try {
+        const { receiverId } = req.body;
+        let sqlQuery = `select * from friend_requests where sender_id=? and receiver_id=? and status=?`;
+        await con.query(sqlQuery, [req.user.id, receiverId, 'pending'], (err, data) => {
+            if (err) throw err;
+            if (data.length < 1) {
+                const query = 'INSERT INTO friend_requests (sender_id, receiver_id) VALUES (?, ?)';
+                con.query(query, [req.user.id, receiverId], (err, result) => {
+                    if (err) throw err;
+                    if (result.affectedRows > 0) {
+                        res.status(200).json({
+                            success: true,
+                            message: 'Friend request sent'
+                        });
+                    }
+                    else {
+                        res.status(400).json({
+                            success: false,
+                            message: 'Error sending friend request'
+                        });
+                    }
+                });
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    message: "you have already sent a request"
+                })
+            }
+
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+const acceptRequest = async (req, res) => {
+    try {
+        const { requestId } = req.body;
+        let sqlQuery = `select * from friend_requests where status=? and id=?`;
+        await con.query(sqlQuery, ['accepted', requestId], (err, data) => {
+            if (err) throw err;
+            if (data.length < 1) {
+                const query = 'UPDATE friend_requests SET status = ? WHERE id = ?';
+                con.query(query, ['accepted', requestId], (err, result) => {
+                    if (err) throw err;
+                    if (result.affectedRows > 0) {
+                        res.status(200).json({
+                            success: true,
+                            message: 'Friend request accepted !'
+                        });
+                    }
+                    else {
+                        res.status(400).json({
+                            success: false,
+                            message: 'Error accepting friend request !'
+                        });
+                    }
+                });
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    message: "You have already accept the friend request !"
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+};
+
+const sendMessage = async (req, res) => {
+    try {
+        const { receiverId, text } = req.body;
+        let sqlQuery = `select * from conversations where user1_id=? and user2_id=?`;
+        await con.query(sqlQuery, [req.user.id, receiverId], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                const query1 = 'INSERT INTO messages (conversation_id, sender_id, text) VALUES (?, ?, ?)';
+                con.query(query1, [data[0].id, req.user.id, text], (err, result) => {
+                    if (err) throw err;
+                    if (result.affectedRows > 0) {
+                        res.status(200).json({
+                            success: true,
+                            message: 'Message sent'
+                        });
+                    }
+                    else {
+                        res.status(400).json({
+                            success: false,
+                            message: 'Error sending message'
+                        });
+                    }
+                });
+            }
+            else {
+                const query = 'INSERT INTO conversations (user1_id, user2_id) VALUES (?, ?)';
+                con.query(query, [req.user.id, receiverId], (err, result) => {
+                    if (err) throw err;
+                    if (result.affectedRows > 0) {
+                        const query1 = 'INSERT INTO messages (conversation_id, sender_id, text) VALUES (?, ?, ?)';
+                        con.query(query1, [result.insertId, req.user.id, text], (err, result1) => {
+                            if (err) throw err;
+                            if (result1.affectedRows > 0) {
+                                res.status(200).json({
+                                    success: true,
+                                    message: 'Message sent'
+                                });
+                            }
+                            else {
+                                res.status(400).json({
+                                    success: false,
+                                    message: 'Error sending message'
+                                });
+                            }
+                        });
+                    }
+                    else {
+                        res.status(400).json({
+                            success: false,
+                            message: 'Error sending message'
+                        });
+                    }
+                });
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+};
+
+const getMessages = async (req, res) => {
+    try {
+        const { conversationId } = req.body;
+        const query = 'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at';
+        con.query(query, [conversationId], (err, results) => {
+            if (err) throw err;
+            if (results.length > 0) {
+                res.status(200).json({
+                    success: true,
+                    messages: results
+                });
+            }
+            else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Error getting messages'
+                });
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+};
+
+const countryList = async (req, res) => {
+    try {
+        const { country_name } = req.body;
+        var selectQuery = `select * from country_list where is_deleted='${0}'`;
+        await con.query(selectQuery, (err, data) => {
+            if (err) throw err;
+            if (data.length < 1) {
+                var sql = `insert into country_list (name) values ('${country_name}')`;
+                con.query(sql, (err, data) => {
+                    if (err) throw err;
+                    res.status(200).send({
+                        success: true,
+                        message: "Country added successfully !"
+                    })
+                })
+            }
+            else {
+                let checking = false;
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i].name === country_name) {
+                        checking = true;
+                        break;
+                    }
+                }
+                if (checking == false) {
+                    var sql = `insert into country_list (name) values ('${country_name}')`;
+                    con.query(sql, (err, data) => {
+                        if (err) throw err;
+                        res.status(200).send({
+                            success: true,
+                            message: "Country added successfully !"
+                        })
+                    })
+                }
+                else {
+                    res.status(400).send({
+                        success: false,
+                        message: "Country is already exist !"
+                    })
+                }
+            }
+
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+const GetCountry = async (req, res) => {
+    try {
+        var selectQuery = `select * from country_list where is_deleted='${0}'`;
+        await con.query(selectQuery, (err, result) => {
+            if (err) throw err;
+            if (result.length < 1) {
+                res.status(400).send({
+                    success: false,
+                    message: "Data not found !"
+                })
+            }
+            else {
+                res.status(200).send({
+                    success: true,
+                    data: result
+                })
+            }
+        })
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+const UpdateCountry = async (req, res) => {
+    const { id, country_name } = req.body;
+    if (!id || !country_name) {
+        res.status(400).send({
+            success: false,
+            message: "Provide id and country_name !"
+        })
+    }
+    else {
+        try {
+            let sql = "Select * from country_list where LOWER(name)=LOWER(?) AND id <> ?";
+            await con.query(sql, [country_name, id], (err, result) => {
+                if (err) throw err;
+                if (result.length > 0) {
+                    res.status(400).send({
+                        success: false,
+                        message: "This Country is already exist !"
+                    })
+                }
+                else {
+                    let updateQuery = "update country_list set name=? where id=?";
+                    con.query(updateQuery, [country_name, id], (err, data) => {
+                        if (err) throw err;
+                        if (data.affectedRows > 0) {
+                            res.status(200).send({
+                                success: true,
+                                message: "Data updated successfully !"
+                            })
+                        }
+                        else {
+                            res.status(400).send({
+                                success: false,
+                                message: "Data not updated !"
+                            })
+                        }
+                    })
+                }
+            })
+        }
+        catch (error) {
+            res.status(500).send({
+                success: false,
+                message: error.message
+            })
+        }
+    }
+}
+
+const DeleteCountry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        var sql = "select is_deleted from country_list where id=?";
+        await con.query(sql, [id], (err, data) => {
+            if (err) throw err;
+            if (data.length > 0) {
+                if (data[0].is_deleted == 1) {
+                    res.status(400).send({
+                        success: false,
+                        message: "This Country is already deleted !"
+                    })
+                }
+                else {
+                    var sql = "update country_list set is_deleted=? where id=?";
+                    con.query(sql, [1, id], (err, data) => {
+                        if (err) throw err;
+                        res.status(200).send({
+                            success: true,
+                            message: "Country deleted successfully!"
+                        })
+                    })
+                }
+            }
+            else {
+                res.status(400).send({
+                    success: false,
+                    message: "Data not exist !"
+                })
+            }
+        })
+
+    }
+    catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        })
+    }
+}
 
 module.exports = {
     activityList, allergensList, areaList, cuisineList, placeList, GetActivity, GetAllergens,
     GetArea, GetCuisine, GetPlace, UpdateActivity, UpdateAllergens, UpdateArea, UpdateCuisine, Updateplace,
     DeleteActivity, DeleteAllergens, DeleteArea, DeleteCuisine, Deleteplace, termsConditions, GetTerms,
-    PrivacyPolicy, GetPrivacy, CancelationPolicy, getCancelPolicy, bookingRequire, GetBookRequire
+    PrivacyPolicy, GetPrivacy, CancelationPolicy, getCancelPolicy, bookingRequire, GetBookRequire, countAll,
+    friendRequest, acceptRequest, sendMessage, getMessages, countryList, GetCountry, UpdateCountry, DeleteCountry
 }
-

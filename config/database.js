@@ -7,10 +7,10 @@ const con = mysql.createConnection(
         user: DB_USER,
         password: DB_PASSWORD,
         database: DB_NAME
-        /* host: "localhost",
-        user: "root",
-        password: "",
-        database: "foodapp" */
+        /* host: "127.0.0.1",
+        user: "forge",
+        password: "3RpmB1HjDiLIVNF7AaI6",
+        database: "suppr" */
     }
 )
 

@@ -6,7 +6,7 @@ require('./config/database');
 
 var PORT=process.env.PORT || 6000
 
-const visitorRoute=require('./routes/visitorRoute');
+const visitorRoute=require('./routes/visitorRoute.js');
 const hostRoute=require('./routes/hostRoute');
 const adminRoute=require('./routes/adminRoute');
 const commonRoute=require('./routes/commonRoute');
@@ -34,3 +34,6 @@ app.listen(PORT,(err)=>
         console.log('server listing on port:', PORT);
     }
 })
+
+
+/* how set nginx server configuration it is misconfigured to handle requests for specific files or routes in node js*/

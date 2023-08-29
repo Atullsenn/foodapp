@@ -1,6 +1,8 @@
 const express = require('express');
 const common_route = express();
 const commonController = require('../controllers/commonController');
+const { authMiddleWare } = require('../helpers/authJwt');
+
 
 const path = require('path');
 const multer = require('multer');
@@ -59,5 +61,17 @@ common_route.get('/cancel/policy', commonController.getCancelPolicy);
 
 common_route.post('/booking/require', commonController.bookingRequire);
 common_route.get('/booking/require', commonController.GetBookRequire);
+
+common_route.post('/count/all', commonController.countAll);
+
+common_route.post('/send-friend-request', authMiddleWare, commonController.friendRequest);
+common_route.post('/accept-friend-request', commonController.acceptRequest);
+common_route.post('/send-message', authMiddleWare, commonController.sendMessage )
+common_route.post('/get-messages', commonController.getMessages)
+
+common_route.post('/country/list', commonController.countryList);
+common_route.get('/country/list', commonController.GetCountry);
+common_route.put('/country/list', commonController.UpdateCountry);
+common_route.delete('/country/list/:id', commonController.DeleteCountry);
 
 module.exports = common_route;

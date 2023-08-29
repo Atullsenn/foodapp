@@ -61,7 +61,7 @@ const forgotPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            success:false,
+            success: false,
             errors: errors.array()
         });
     }
@@ -180,7 +180,7 @@ const ResetPassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            success:false,
+            success: false,
             errors: errors.array()
         });
     }
@@ -246,7 +246,7 @@ const AdminChangePassword = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            success:false,
+            success: false,
             errors: errors.array()
         });
     }
@@ -349,7 +349,7 @@ const UpdateProfile = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
-            success:false,
+            success: false,
             errors: errors.array()
         });
     }
@@ -705,7 +705,7 @@ const deleteBooking = async (req, res) => {
                         con.query(updateQuery, [1, booking_id], (err, result) => {
                             if (err) throw err;
                             res.status(200).send({
-                                success: false,
+                                success: true,
                                 msg: "Booking deleted successfully !"
                             })
                         })
@@ -1003,7 +1003,6 @@ const CustomerBookings = async (req, res) => {
         })
     }
 }
-
 
 module.exports = {
     Login, forgotPassword, ResetPassword, AdminChangePassword, VisitorList, GetProfile,

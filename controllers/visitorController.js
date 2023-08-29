@@ -190,7 +190,7 @@ const logout = async (req, res) => {
             con.query(delTokenQuery, [refreshToken], (err, data) => {
                 if (err) throw err;
                 return res.status(200).send({
-                    success: false,
+                    success: true,
                     message: "You've been signed out!",
                 });
             });
@@ -671,48 +671,56 @@ const HostingDetails = async (req, res) => {
                                             if (find.length > 0) {
                                                 is_favorite = 1;
                                             }
-                                            var values = {
-                                                id: data[i].id,
-                                                host_id: data[i].host_id,
-                                                place_type: data[i].place_type,
-                                                country: data[i].country,
-                                                state: data[i].state,
-                                                city: data[i].city,
-                                                street: data[i].street,
-                                                building_name: data[i].building_name,
-                                                flat_no: data[i].flat_no,
-                                                address_document: data[i].address_document,
-                                                lat: data[i].lat,
-                                                lng: data[i].lng,
-                                                area_type: data[i].area_type,
-                                                area_video: data[i].area_video,
-                                                no_of_guests: data[i].no_of_guests,
-                                                activities: data[i].activities,
-                                                dress_code: data[i].dress_code,
-                                                no_of_courses: data[i].no_of_courses,
-                                                fees_per_person: data[i].fees_per_person,
-                                                fees_per_group: data[i].fees_per_group,
-                                                bank_country: data[i].bank_country,
-                                                bank_name: data[i].bank_name,
-                                                bank_iban: data[i].bank_iban,
-                                                bank_swift_code: data[i].bank_swift_code,
-                                                account_currency: data[i].account_currency,
-                                                host_name: data[i].host_name,
-                                                trade_license: data[i].trade_license,
-                                                about_me: data[i].about_me,
-                                                first_name: data[i].first_name,
-                                                last_name: data[i].last_name,
-                                                created_at: data[i].created_at,
-                                                updated_at: data[i].updated_at,
-                                                // data: data[i],
-                                                area_images: images,
-                                                rules: rules,
-                                                menus: menus,
-                                                cuisines: cuisines,
-                                                time_slots: time_slots,
-                                                is_favorite: is_favorite
-                                            }
-                                            arr.push(values)
+                                            con.query(`select heading, description from book_requirement`, (err, requr) => {
+                                                if (err) throw err;
+                                                con.query(`select heading, description from cancel_policy`, (err, canpolicy) => {
+                                                    if (err) throw err;
+                                                    var values = {
+                                                        id: data[i].id,
+                                                        host_id: data[i].host_id,
+                                                        place_type: data[i].place_type,
+                                                        country: data[i].country,
+                                                        state: data[i].state,
+                                                        city: data[i].city,
+                                                        street: data[i].street,
+                                                        building_name: data[i].building_name,
+                                                        flat_no: data[i].flat_no,
+                                                        address_document: data[i].address_document,
+                                                        lat: data[i].lat,
+                                                        lng: data[i].lng,
+                                                        area_type: data[i].area_type,
+                                                        area_video: data[i].area_video,
+                                                        no_of_guests: data[i].no_of_guests,
+                                                        activities: data[i].activities,
+                                                        dress_code: data[i].dress_code,
+                                                        no_of_courses: data[i].no_of_courses,
+                                                        fees_per_person: data[i].fees_per_person,
+                                                        fees_per_group: data[i].fees_per_group,
+                                                        bank_country: data[i].bank_country,
+                                                        bank_name: data[i].bank_name,
+                                                        bank_iban: data[i].bank_iban,
+                                                        bank_swift_code: data[i].bank_swift_code,
+                                                        account_currency: data[i].account_currency,
+                                                        host_name: data[i].host_name,
+                                                        trade_license: data[i].trade_license,
+                                                        about_me: data[i].about_me,
+                                                        first_name: data[i].first_name,
+                                                        last_name: data[i].last_name,
+                                                        created_at: data[i].created_at,
+                                                        updated_at: data[i].updated_at,
+                                                        // data: data[i],
+                                                        area_images: images,
+                                                        rules: rules,
+                                                        menus: menus,
+                                                        cuisines: cuisines,
+                                                        time_slots: time_slots,
+                                                        is_favorite: is_favorite,
+                                                        book_requirement: requr[0],
+                                                        cancellation_policy: canpolicy[0]
+                                                    }
+                                                    arr.push(values)
+                                                })
+                                            })
                                         })
                                     })
 
@@ -1077,48 +1085,56 @@ const NearbyHosts = async (req, res) => {
                                             if (find.length > 0) {
                                                 is_favorite = 1;
                                             }
-                                            var values = {
-                                                id: data[i].id,
-                                                host_id: data[i].host_id,
-                                                place_type: data[i].place_type,
-                                                country: data[i].country,
-                                                state: data[i].state,
-                                                city: data[i].city,
-                                                street: data[i].street,
-                                                building_name: data[i].building_name,
-                                                flat_no: data[i].flat_no,
-                                                address_document: data[i].address_document,
-                                                lat: data[i].lat,
-                                                lng: data[i].lng,
-                                                area_type: data[i].area_type,
-                                                area_video: data[i].area_video,
-                                                no_of_guests: data[i].no_of_guests,
-                                                activities: data[i].activities,
-                                                dress_code: data[i].dress_code,
-                                                no_of_courses: data[i].no_of_courses,
-                                                fees_per_person: data[i].fees_per_person,
-                                                fees_per_group: data[i].fees_per_group,
-                                                bank_country: data[i].bank_country,
-                                                bank_name: data[i].bank_name,
-                                                bank_iban: data[i].bank_iban,
-                                                bank_swift_code: data[i].bank_swift_code,
-                                                account_currency: data[i].account_currency,
-                                                host_name: data[i].host_name,
-                                                trade_license: data[i].trade_license,
-                                                about_me: data[i].about_me,
-                                                first_name: data[i].first_name,
-                                                last_name: data[i].last_name,
-                                                created_at: data[i].created_at,
-                                                updated_at: data[i].updated_at,
-                                                // details: data[i],
-                                                area_images: images,
-                                                rules: rules,
-                                                menus: menus,
-                                                cuisines: cuisines,
-                                                time_slots: time_slots,
-                                                is_favorite: is_favorite,
-                                            }
-                                            arr.push(values)
+                                            con.query(`select heading, description from book_requirement`, (err, requr) => {
+                                                if (err) throw err;
+                                                con.query(`select heading, description from cancel_policy`, (err, canpolicy) => {
+                                                    if (err) throw err;
+                                                    var values = {
+                                                        id: data[i].id,
+                                                        host_id: data[i].host_id,
+                                                        place_type: data[i].place_type,
+                                                        country: data[i].country,
+                                                        state: data[i].state,
+                                                        city: data[i].city,
+                                                        street: data[i].street,
+                                                        building_name: data[i].building_name,
+                                                        flat_no: data[i].flat_no,
+                                                        address_document: data[i].address_document,
+                                                        lat: data[i].lat,
+                                                        lng: data[i].lng,
+                                                        area_type: data[i].area_type,
+                                                        area_video: data[i].area_video,
+                                                        no_of_guests: data[i].no_of_guests,
+                                                        activities: data[i].activities,
+                                                        dress_code: data[i].dress_code,
+                                                        no_of_courses: data[i].no_of_courses,
+                                                        fees_per_person: data[i].fees_per_person,
+                                                        fees_per_group: data[i].fees_per_group,
+                                                        bank_country: data[i].bank_country,
+                                                        bank_name: data[i].bank_name,
+                                                        bank_iban: data[i].bank_iban,
+                                                        bank_swift_code: data[i].bank_swift_code,
+                                                        account_currency: data[i].account_currency,
+                                                        host_name: data[i].host_name,
+                                                        trade_license: data[i].trade_license,
+                                                        about_me: data[i].about_me,
+                                                        first_name: data[i].first_name,
+                                                        last_name: data[i].last_name,
+                                                        created_at: data[i].created_at,
+                                                        updated_at: data[i].updated_at,
+                                                        // details: data[i],
+                                                        area_images: images,
+                                                        rules: rules,
+                                                        menus: menus,
+                                                        cuisines: cuisines,
+                                                        time_slots: time_slots,
+                                                        is_favorite: is_favorite,
+                                                        book_requirement: requr[0],
+                                                        cancellation_policy: canpolicy[0]
+                                                    }
+                                                    arr.push(values)
+                                                })
+                                            })
                                         })
                                     })
                                 })

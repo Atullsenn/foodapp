@@ -1,6 +1,6 @@
 const express = require('express');
 const visitor_route = express();
-const visitorController = require('../controllers/visitorController');
+const visitorController = require('../controllers/visitorController.js');
 const { userRegValidation, userLoginValidation, changePasswordValidations, visitorProfileValidation, bookingValidation } = require('../helpers/validation');
 const { authMiddleWare } = require('../helpers/authJwt');
 

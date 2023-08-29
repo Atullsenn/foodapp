@@ -1,4 +1,5 @@
 const express = require('express');
+
 const host_route = express();
 const hostController = require('../controllers/hostController');
 const { hostRegValidation } = require('../helpers/validation');
@@ -52,5 +53,9 @@ host_route.get('/rating', authMiddleWare, hostController.getRating);
 host_route.post('/myratings', authMiddleWare, hostController.MyRatings);
 
 host_route.post('/change/menu', upload, authMiddleWare, hostController.changeMenu);
+
+/// new
+
+host_route.post('/add/hosting', authMiddleWare, upload, hostController.add_Hosting );
 
 module.exports = host_route;

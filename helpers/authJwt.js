@@ -77,6 +77,7 @@ const authServices = {
       // console.log("middle", token)
       if (token === null || !token)
         return res.status(401).json({
+          success: false,
           message: "There is no token in header",
         });
 
@@ -97,3 +98,4 @@ const authServices = {
 module.exports = authServices;
 
 
+// make api to accept fiends request then start conversation between host and visitors in node js and create table in mysql and also mkae api to get messages of both

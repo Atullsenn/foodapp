@@ -26,7 +26,7 @@ const Register = async (req, res) => {
     let identify_document = req.files.identify_document[0].filename;
 
     try {
-        await con.query(`select * from tbl_visitors where email='${email}' and is_deleted='${0}'`, (err, result) => {
+        await con.query(`select email from tbl_visitors where email='${email}' and is_deleted='${0}'`, (err, result) => {
             if (err) throw err;
             if (result.length > 0) {
                 res.status(400).send({
@@ -35,7 +35,7 @@ const Register = async (req, res) => {
                 })
             }
             else {
-                con.query(`select * from tbl_visitors where mobile_no='${phoneNo}' and is_deleted='${0}'`, (err, result1) => {
+                con.query(`select mobile_no from tbl_visitors where mobile_no='${phoneNo}' and is_deleted='${0}'`, (err, result1) => {
                     if (err) throw err;
                     if (result1.length > 0) {
                         res.status(400).send({
@@ -487,7 +487,6 @@ const GoogleLogin = async (req, res) => {
                             })
                         });
                     })
-
                 })
             }
             else {
@@ -620,51 +619,138 @@ const visittohost = async (req, res) => {
 
 const HostingDetails = async (req, res) => {
     try {
-        await con.query(`select tbl_hosting.*, tbl_hosts.host_name, tbl_hosts.trade_license, tbl_hosts.about_me, tbl_visitors.first_name, tbl_visitors.last_name from tbl_hosting INNER JOIN tbl_visitors 
-        ON tbl_visitors.id= tbl_hosting.host_id INNER JOIN tbl_hosts on tbl_hosts.visitor_id=tbl_hosting.host_id`, (err, data) => {
+        await con.query(`select tbl_hosting.*, place_list.place_type, country_list.name as country_name, area_list.area_type, tbl_hosts.host_name, tbl_hosts.trade_license, tbl_hosts.about_me, 
+        tbl_visitors.first_name, tbl_visitors.last_name from tbl_hosting 
+        INNER JOIN tbl_visitors ON tbl_visitors.id= tbl_hosting.host_id 
+        INNER JOIN tbl_hosts on tbl_hosts.visitor_id=tbl_hosting.host_id 
+        INNER JOIN area_list on area_list.id=tbl_hosting.area_id
+        INNER JOIN country_list on country_list.id=tbl_hosting.country_id
+        INNER JOIN place_list on place_list.id=tbl_hosting.place_id`, (err, data) => {
             if (err) throw err;
-            // console.log(data)
+            //console.log(data)
             if (data.length < 1) {
                 res.status(400).send({
                     success: false,
-                    message: "Details not found !"
+                    message: "No hosts Added yet !"
                 })
             }
             else {
-                // console.log(data.length)
+                //  console.log(data)
                 var arr = [];
                 for (let i = 0; i < data.length; i++) {
+                    // console.log(data[i].activities_id !== null )
+                    // console.log(data[i].activities_id )
+                    const cuisine_style = [];
+                    //  console.log(data[i].cuisine_style)
+                    if (data[i].cuisine_style !== null) {
+                        //console.log('hii')
+                        const arr1 = data[i].cuisine_style.split(",");
+                        //console.log(arr1)
+                        arr1.forEach(data => {
+                            // console.log(data)
+                            var sql1 = `select id, cuisine_type from cuisine_list where id='${data}'`;
+                            con.query(sql1, (err, type) => {
+                                if (err) throw err;
+
+                                cuisine_style.push(type[0]);
+                                // console.log(cuisine_style)
+                            })
+
+                        });
+                    }
+
+                    const activities_type = [];
+                    if (data[i].activities_id !== null) {
+                        //console.log('hii')
+                        const arr1 = data[i].activities_id.split(",");
+                        //console.log(arr1)
+                        arr1.forEach(data => {
+                            // console.log(data)
+                            var sql1 = `select * from activities_list where id='${data}'`;
+                            con.query(sql1, (err, type) => {
+                                if (err) throw err;
+                                // console.log(type)
+                                activities_type.push(type[0].activity_type);
+                                //console.log(area_type)
+                            })
+                        });
+                    }
+
                     con.query(`select * from hosting_images where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, result) => {
                         if (err) throw err;
-                        // console.log(result)
+                        //console.log(result)
                         var images = [];
                         result.forEach(item => {
                             images.push(item.image);
+
                         })
-                        con.query(`select * from hosting_rules where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, response) => {
+                        // console.log(images)
+                        con.query(`select * from hosting_rules where hosting_id='${data[i].id}'and host_id='${data[i].host_id}'`, (err, response) => {
                             if (err) throw err;
+                            //  console.log(response);
                             var rules = [];
                             response.forEach(item => {
                                 rules.push(item.rules);
                             })
-                            con.query(`select * from hosting_menu where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, menudata) => {
+                            //console.log(rules)
+                            con.query(`select time_slots.*, cuisine_list.cuisine_type from time_slots INNER JOIN cuisine_list on cuisine_list.id=time_slots.cuisine_id where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, timeDay) => {
                                 if (err) throw err;
-                                var menus = [];
-                                menudata.forEach(item => {
-                                    menus.push(item);
+                                var time = [];
+                                timeDay.forEach(item => {
+                                    time.push(item);
                                 })
-                                con.query(`select * from cuisine_style where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, cuisine) => {
+                                //console.log(time)
+                                con.query(`select * from discounts where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, discountData) => {
                                     if (err) throw err;
-                                    var cuisines = [];
-                                    cuisine.forEach(item => {
-                                        cuisines.push(item.type);
+                                    var discount = [];
+                                    discountData.forEach(item => {
+                                        discount.push(item);
                                     })
-                                    con.query(`select * from time_slots where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, timeslots) => {
+                                    //console.log(discount)
+                                    con.query(`select hosting_menu.*, cuisine_list.cuisine_type from hosting_menu 
+                                    INNER JOIN cuisine_list on cuisine_list.id=hosting_menu.cuisine_id
+                                    where hosting_id='${data[i].id}' and host_id='${data[i].host_id}'`, (err, menudata) => {
                                         if (err) throw err;
-                                        var time_slots = [];
-                                        timeslots.forEach(item => {
-                                            time_slots.push(item);
-                                        })
+                                        //console.log(menudata);
+                                        if (menudata.length > 0) {
+
+                                            for (const row of menudata) {
+                                                const allergenIds = row.allergens_id.split(',').map(Number);
+                                                row.allergen_types = allergenIds;
+                                            }
+                                            const allergenData = {};
+
+                                            for (const row of menudata) {
+
+                                                for (const allergenId of row.allergen_types) {
+                                                    row.allergen_types = [];
+                                                    if (!allergenData[allergenId]) {
+                                                        //console.log(allergenId);
+                                                        // Query the allergen table to get allergen data
+                                                        const query = 'select id, name from allergens_list WHERE id = ?';
+                                                        con.query(query, [allergenId], (err, results) => {
+                                                            if (err) {
+                                                                console.error('Error querying allergen table:', err);
+                                                            } else {
+                                                                if (results.length > 0) {
+                                                                    const allergen = results[0];
+
+                                                                    row.allergen_types.push(allergen);
+                                                                    //  allergenData[allergenId] = allergen;
+
+                                                                } else {
+                                                                    console.warn(`Allergen with ID ${allergenId} not found`);
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            var menus = [];
+                                            menudata.forEach(item => {
+                                                menus.push(item);
+                                            })
+                                        }
                                         con.query(`select * from fav_hosting where visitor_id='${req.user.id}' and hosting_id='${data[i].id}'`, (err, find) => {
                                             if (err) throw err;
                                             var is_favorite = 0;
@@ -678,8 +764,9 @@ const HostingDetails = async (req, res) => {
                                                     var values = {
                                                         id: data[i].id,
                                                         host_id: data[i].host_id,
+                                                        form_type: data[i].form_type,
                                                         place_type: data[i].place_type,
-                                                        country: data[i].country,
+                                                        country: data[i].country_name,
                                                         state: data[i].state,
                                                         city: data[i].city,
                                                         street: data[i].street,
@@ -691,9 +778,7 @@ const HostingDetails = async (req, res) => {
                                                         area_type: data[i].area_type,
                                                         area_video: data[i].area_video,
                                                         no_of_guests: data[i].no_of_guests,
-                                                        activities: data[i].activities,
                                                         dress_code: data[i].dress_code,
-                                                        no_of_courses: data[i].no_of_courses,
                                                         fees_per_person: data[i].fees_per_person,
                                                         fees_per_group: data[i].fees_per_group,
                                                         bank_country: data[i].bank_country,
@@ -709,25 +794,29 @@ const HostingDetails = async (req, res) => {
                                                         created_at: data[i].created_at,
                                                         updated_at: data[i].updated_at,
                                                         // data: data[i],
+                                                        cuisine_list: cuisine_style,
+                                                        activities_type: activities_type,
                                                         area_images: images,
                                                         rules: rules,
                                                         menus: menus,
-                                                        cuisines: cuisines,
-                                                        time_slots: time_slots,
+                                                        discount: discount,
+                                                        time_slots: time,
                                                         is_favorite: is_favorite,
                                                         book_requirement: requr[0],
-                                                        cancellation_policy: canpolicy[0]
+                                                        cancel_policy: canpolicy[0]
                                                     }
                                                     arr.push(values)
                                                 })
                                             })
+                                            // console.log(menus)
                                         })
                                     })
 
                                 })
                             })
                         })
-                    });
+
+                    })
                 }
                 setTimeout(function () {
                     res.status(200).send({
@@ -760,48 +849,96 @@ const Seatbooking = async (req, res) => {
         await con.query(sqlQuery, [req.user.id], (err, data) => {
             if (err) throw err;
             if (data.length < 1) {
-                let document = req.files.identify_document[0].filename;
-                var sql = "insert into tbl_booking ( visitor_id, host_id, hosting_id, booking_date, booking_time, adult, child, pets, document ) values (?,?,?,?,?,?,?,?,?)";
-                con.query(sql, [req.user.id, host_id, hosting_id, booking_date, booking_time, adult, child, pets, document], (err, result) => {
-                    if (err) throw err;
-                    if (result.affectedRows < 1) {
-                        res.status(400).send({
-                            success: false,
-                            message: "Reservation failed !"
-                        })
-                    }
-                    else {
-                        let InsertQuery = "insert into tbl_payment (booking_id, visitor_id, host_id, payment_id, amount, payment_method, status) values (?, ?, ?, ?, ?, ?, ?)";
-                        con.query(InsertQuery, [result.insertId, req.user.id, host_id, payment_id, amount, payment_method, status], (err, details) => {
-                            if (err) throw err;
-                            if (details.affectedRows > 0) {
-                                let guests = adult + child;
-                                let sqlQuery = "select no_of_guests as guests from tbl_hosting where id=?"
-                                con.query(sqlQuery, [hosting_id], (err, result) => {
-                                    if (err) throw err;
-                                    if (result.length > 0) {
-                                        let total_guests = result[0].guests;
-                                        let remain_seat = total_guests - guests;
-                                        let updateQuery = "update tbl_hosting set no_of_guests=? where id=?";
-                                        con.query(updateQuery, [remain_seat, hosting_id], (err, update) => {
-                                            if (err) throw err;
-                                        })
-                                    }
-                                })
-                                res.status(200).send({
-                                    success: true,
-                                    message: "Reservation completed !"
-                                })
-                            }
-                            else {
-                                res.status(400).send({
-                                    success: false,
-                                    message: "Reservation failed !"
-                                })
-                            }
-                        })
-                    }
-                })
+                if (req.files.identify_document == undefined) {
+
+                    var sql = "insert into tbl_booking ( visitor_id, host_id, hosting_id, booking_date, booking_time, adult, child, pets ) values (?,?,?,?,?,?,?,?)";
+                    con.query(sql, [req.user.id, host_id, hosting_id, booking_date, booking_time, adult, child, pets], (err, result) => {
+                        if (err) throw err;
+                        if (result.affectedRows < 1) {
+                            res.status(400).send({
+                                success: false,
+                                message: "Reservation failed !"
+                            })
+                        }
+                        else {
+                            let InsertQuery = "insert into tbl_payment (booking_id, visitor_id, host_id, payment_id, amount, payment_method, status) values (?, ?, ?, ?, ?, ?, ?)";
+                            con.query(InsertQuery, [result.insertId, req.user.id, host_id, payment_id, amount, payment_method, status], (err, details) => {
+                                if (err) throw err;
+                                if (details.affectedRows > 0) {
+                                    let guests = adult + child;
+                                    // console.log(guests);
+                                    let sqlQuery = "select no_of_guests as guests from tbl_hosting where id=?"
+                                    con.query(sqlQuery, [hosting_id], (err, result) => {
+                                        if (err) throw err;
+                                        if (result.length > 0) {
+                                            // console.log(result);
+                                            let total_guests = result[0].guests;
+                                            let remain_seat = total_guests - guests;
+                                            let updateQuery = "update tbl_hosting set no_of_guests=? where id=?";
+                                            con.query(updateQuery, [remain_seat, hosting_id], (err, update) => {
+                                                if (err) throw err;
+                                            })
+                                        }
+                                    })
+                                    res.status(200).send({
+                                        success: true,
+                                        message: "Reservation completed !"
+                                    })
+                                }
+                                else {
+                                    res.status(400).send({
+                                        success: false,
+                                        message: "Reservation failed !"
+                                    })
+                                }
+                            })
+                        }
+                    })
+                }
+                else {
+                    let document = req.files.identify_document[0].filename;
+                    var sql = "insert into tbl_booking ( visitor_id, host_id, hosting_id, booking_date, booking_time, adult, child, pets, document ) values (?,?,?,?,?,?,?,?,?)";
+                    con.query(sql, [req.user.id, host_id, hosting_id, booking_date, booking_time, adult, child, pets, document], (err, result) => {
+                        if (err) throw err;
+                        if (result.affectedRows < 1) {
+                            res.status(400).send({
+                                success: false,
+                                message: "Reservation failed !"
+                            })
+                        }
+                        else {
+                            let InsertQuery = "insert into tbl_payment (booking_id, visitor_id, host_id, payment_id, amount, payment_method, status) values (?, ?, ?, ?, ?, ?, ?)";
+                            con.query(InsertQuery, [result.insertId, req.user.id, host_id, payment_id, amount, payment_method, status], (err, details) => {
+                                if (err) throw err;
+                                if (details.affectedRows > 0) {
+                                    let guests = adult + child;
+                                    let sqlQuery = "select no_of_guests as guests from tbl_hosting where id=?"
+                                    con.query(sqlQuery, [hosting_id], (err, result) => {
+                                        if (err) throw err;
+                                        if (result.length > 0) {
+                                            let total_guests = result[0].guests;
+                                            let remain_seat = total_guests - guests;
+                                            let updateQuery = "update tbl_hosting set no_of_guests=? where id=?";
+                                            con.query(updateQuery, [remain_seat, hosting_id], (err, update) => {
+                                                if (err) throw err;
+                                            })
+                                        }
+                                    })
+                                    res.status(200).send({
+                                        success: true,
+                                        message: "Reservation completed !"
+                                    })
+                                }
+                                else {
+                                    res.status(400).send({
+                                        success: false,
+                                        message: "Reservation failed !"
+                                    })
+                                }
+                            })
+                        }
+                    })
+                }
             }
             else {
                 res.status(400).send({
@@ -831,9 +968,16 @@ const PreviousBooking = async (req, res) => {
     const time = hours + ":" + minutes + ":" + second;
     const date_time = date_find.concat(' ', time);
 
-    let sqlQuery = `select tbl_booking.*, DATE_FORMAT(tbl_booking.booking_date ,'%Y-%m-%d') as booking_date, tbl_visitors.first_name, tbl_visitors.last_name, tbl_hosting.place_type, tbl_hosting.country, tbl_hosting.state, tbl_hosting.city, tbl_hosting.street, tbl_hosting.building_name, tbl_hosting.flat_no, tbl_hosting.dress_code
-    from tbl_booking INNER JOIN tbl_visitors on tbl_booking.host_id=tbl_visitors.id INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id where visitor_id=? and 
-    CONCAT(booking_date, ' ',booking_time) <= ? and tbl_booking.is_deleted=? ORDER BY CONCAT(booking_date, ' ',booking_time) DESC`;
+    let sqlQuery = `select tbl_booking.*, DATE_FORMAT(tbl_booking.booking_date ,'%Y-%m-%d') as booking_date,
+     tbl_visitors.first_name, tbl_visitors.last_name, tbl_hosting.state, tbl_hosting.city, tbl_hosting.street, tbl_hosting.building_name, 
+     tbl_hosting.flat_no, tbl_hosting.dress_code, place_list.place_type, country_list.name as country_name
+    from tbl_booking INNER JOIN tbl_visitors on tbl_booking.host_id=tbl_visitors.id 
+    INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id 
+    INNER JOIN place_list on place_list.id=tbl_hosting.place_id 
+    INNER JOIN country_list on country_list.id=tbl_hosting.country_id
+    where visitor_id=? and 
+    CONCAT(booking_date, ' ',booking_time) <= ? and tbl_booking.is_deleted=? 
+    ORDER BY CONCAT(booking_date, ' ',booking_time) DESC`;
 
     try {
         await con.query(sqlQuery, [req.user.id, date_time, 0], (err, data) => {
@@ -871,9 +1015,18 @@ const upcomingBooking = async (req, res) => {
     const date_find = year + "-" + month + "-" + date;
     const time = hours + ":" + minutes + ":" + second;
     const date_time = date_find.concat(' ', time);
-    let sqlQuery = `select tbl_booking.*, DATE_FORMAT(tbl_booking.booking_date ,'%Y-%m-%d') as booking_date, tbl_visitors.first_name, tbl_visitors.last_name, tbl_hosting.place_type, tbl_hosting.country, tbl_hosting.state, tbl_hosting.city, tbl_hosting.street, tbl_hosting.building_name, tbl_hosting.flat_no, tbl_hosting.dress_code
-    from tbl_booking INNER JOIN tbl_visitors on tbl_booking.host_id=tbl_visitors.id INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id where visitor_id=? and 
-    CONCAT(booking_date, ' ', booking_time) >= ? and tbl_booking.is_deleted=? ORDER BY CONCAT(booking_date, ' ',booking_time) DESC`;
+    let sqlQuery = `select tbl_booking.*, DATE_FORMAT(tbl_booking.booking_date ,'%Y-%m-%d') as booking_date, 
+    tbl_visitors.first_name, tbl_visitors.last_name, place_list.place_type, country_list.name as country_name,
+     tbl_hosting.state, tbl_hosting.city, 
+    tbl_hosting.street, tbl_hosting.building_name, tbl_hosting.flat_no, tbl_hosting.dress_code
+    from tbl_booking 
+    INNER JOIN tbl_visitors on tbl_booking.host_id=tbl_visitors.id 
+    INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id 
+    INNER JOIN place_list on place_list.id=tbl_hosting.place_id 
+    INNER JOIN country_list on country_list.id=tbl_hosting.country_id
+    where visitor_id=? and 
+    CONCAT(booking_date, ' ', booking_time) >= ? and tbl_booking.is_deleted=? 
+    ORDER BY CONCAT(booking_date, ' ',booking_time) DESC`;
     try {
         await con.query(sqlQuery, [req.user.id, date_time, 0], (err, data) => {
             if (err) throw err;

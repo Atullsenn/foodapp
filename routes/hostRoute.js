@@ -58,4 +58,7 @@ host_route.post('/change/menu', upload, authMiddleWare, hostController.changeMen
 
 host_route.post('/add/hosting', authMiddleWare, upload, hostController.add_Hosting );
 
+host_route.post('/add/cuisine', hostController.addCuisine);
+host_route.post('/get/cuisine', hostController.getCuisine);
+
 module.exports = host_route;

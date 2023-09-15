@@ -52,7 +52,7 @@ const authServices = {
   },
   verifyRefreshToken: async (refreshToken) => {
     return new Promise((resolve, reject) => {
-      let findTokenQuery = "SELECT * FROM userToken WHERE token = ?";
+      let findTokenQuery = "SELECT token FROM usertoken WHERE token = ?";
       con.query(findTokenQuery, [refreshToken], (err, doc) => {
         // console.log(doc)
         if (doc.length < 1)

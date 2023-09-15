@@ -544,8 +544,8 @@ const HostList = async (req, res) => {
 
 const bookingList = async (req, res) => {
     let sqlQuery = `select tbl_booking.*, tbl_payment.payment_method as payment_method, tbl_payment.amount as price, CONCAT(a.first_name, ' ', a.last_name) as host_name, CONCAT(b.first_name, ' ', b.last_name) as visitor_name, 
-    tbl_hosting.area_video, tbl_hosting.place_type,
-    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state, ', ',tbl_hosting.country) as Host_address 
+    tbl_hosting.area_video,
+    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state) as Host_address 
     from tbl_booking 
     INNER JOIN tbl_visitors  as a on tbl_booking.host_id=a.id 
     INNER JOIN tbl_visitors  as b on tbl_booking.visitor_id=b.id 
@@ -972,8 +972,8 @@ const paymentDetails = async (req, res) => {
 const CustomerBookings = async (req, res) => {
     const { visitorId } = req.body;
     let sqlQuery = `select tbl_booking.*, tbl_payment.payment_method as payment_method, tbl_payment.amount as price, CONCAT(a.first_name, ' ', a.last_name) as host_name, 
-    tbl_hosting.area_video, tbl_hosting.place_type,
-    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state, ', ',tbl_hosting.country) as Host_address 
+    tbl_hosting.area_video,
+    CONCAT( tbl_hosting.flat_no, ', ', tbl_hosting.building_name, ', ', tbl_hosting.street, ', ', tbl_hosting.city, ', ', tbl_hosting.state) as Host_address 
     from tbl_booking 
     INNER JOIN tbl_visitors  as a on tbl_booking.host_id=a.id 
     INNER JOIN tbl_hosting on tbl_booking.hosting_id=tbl_hosting.id 

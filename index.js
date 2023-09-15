@@ -4,12 +4,12 @@ const app = express();
 const bodyparser = require('body-parser');
 require('./config/database');
 
-var PORT=process.env.PORT || 6000
+var PORT = process.env.PORT || 6000
 
-const visitorRoute=require('./routes/visitorRoute.js');
-const hostRoute=require('./routes/hostRoute');
-const adminRoute=require('./routes/adminRoute');
-const commonRoute=require('./routes/commonRoute');
+const visitorRoute = require('./routes/visitorRoute.js');
+const hostRoute = require('./routes/hostRoute');
+const adminRoute = require('./routes/adminRoute');
+const commonRoute = require('./routes/commonRoute');
 
 var cors = require('cors');
 app.use(cors({
@@ -18,7 +18,7 @@ app.use(cors({
 
 app.use(bodyparser.json());
 app.use(express.json());
-app.use(bodyparser.urlencoded({extended:true}));
+app.use(bodyparser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use('/api', visitorRoute);
@@ -26,14 +26,14 @@ app.use('/api', hostRoute);
 app.use('/api', adminRoute);
 app.use('/api', commonRoute);
 
-app.listen(PORT,(err)=>
-{
-    if(err) throw err;
-    else
-    {
-        console.log('server listing on port:', PORT);
-    }
+app.get('/', (req, res) => {
+    res.send('welcome')
 })
 
 
-/* how set nginx server configuration it is misconfigured to handle requests for specific files or routes in node js*/
+app.listen(PORT, (err) => {
+    if (err) throw err;
+    else {
+        console.log('server listing on port:', PORT);
+    }
+})
